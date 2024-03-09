@@ -2,6 +2,16 @@ import { ConvexError, v } from 'convex/values';
 import { MutationCtx, QueryCtx, mutation, query } from './_generated/server';
 import { getUser } from './users';
 
+export const generateUploadUrl = mutation(async (ctx) => {
+  const identity = await ctx.auth.getUserIdentity();
+
+  if (!identity) {
+    throw new ConvexError('Unauthorized');
+  }
+
+  return await ctx.storage.generateUploadUrl();
+});
+
 export async function hasAccessToOrg(
   ctx: QueryCtx | MutationCtx,
   orgId: string
