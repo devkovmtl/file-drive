@@ -159,3 +159,20 @@ export const getFiles = query({
     return files;
   },
 });
+
+export const deleteAllFiles = internalMutation({
+  args: {},
+  async handler(ctx) {
+    const files = await ctx.db
+      .query('files')
+      .withIndex('by_shouldDelete', (q) => q.eq('shouldDelete', true))
+      .collect();
+
+    await Promise.all(
+      files.map(async (file) => {
+        await ctx.storage.delete(file.fileId);
+        return await ctx.db.delete(file._id);
+      })
+    );
+  },
+});
