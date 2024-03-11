@@ -118,11 +118,44 @@ export const getFiles = query({
       return [];
     }
 
-    // return every entry stored in the 'files' collection
-    // return ctx.db.query('files').collect();
-    return ctx.db
+    let files = await ctx.db
       .query('files')
       .withIndex('by_orgId', (q) => q.eq('orgId', args.orgId))
       .collect();
+
+    const query = args.query;
+
+    if (query) {
+      files = files.filter((file) =>
+        file.name.toLocaleLowerCase().includes(query.toLowerCase())
+      );
+    }
+
+    if (args.favorites) {
+      const favorites = await ctx.db
+        .query('favorites')
+        .withIndex('by_userId_orgId_fileId', (q) =>
+          q.eq('userId', hasAccess.user._id).eq('orgId', args.orgId)
+        )
+        .collect();
+
+      files = files.filter((file) =>
+        favorites.some((favorite) => favorite.fileId === file._id)
+      );
+    }
+
+    if (args.deletedOnly) {
+      files = files.filter((file) => file.shouldDelete);
+    } else {
+      files = files.filter((file) => !file.shouldDelete);
+    }
+
+    if (args.type) {
+      files = files.filter((file) => file.type === args.type);
+    }
+
+    // return every entry stored in the 'files' collection
+    // return ctx.db.query('files').collect();
+    return files;
   },
 });
