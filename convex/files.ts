@@ -1,6 +1,13 @@
 import { ConvexError, v } from 'convex/values';
-import { MutationCtx, QueryCtx, mutation, query } from './_generated/server';
+import {
+  MutationCtx,
+  QueryCtx,
+  internalMutation,
+  mutation,
+  query,
+} from './_generated/server';
 import { getUser } from './users';
+import { fileTypes } from './schema';
 
 export const generateUploadUrl = mutation(async (ctx) => {
   const identity = await ctx.auth.getUserIdentity();
@@ -34,7 +41,7 @@ export async function hasAccessToOrg(
   }
 
   const hasAccess =
-    user.orgIds.some((item) => item === orgId) ||
+    user.orgIds.some((item) => item.orgId === orgId) ||
     user.tokenIdentifier.includes(orgId);
 
   if (!hasAccess) {
@@ -48,7 +55,9 @@ export async function hasAccessToOrg(
 export const createFile = mutation({
   args: {
     name: v.string(),
+    fileId: v.id('_storage'),
     orgId: v.string(),
+    type: fileTypes,
   },
   async handler(ctx, args) {
     const identity = await ctx.auth.getUserIdentity();
@@ -76,13 +85,23 @@ export const createFile = mutation({
       throw new ConvexError('You do not have permission to create a file');
     }
 
-    await ctx.db.insert('files', { name: args.name, orgId: args.orgId });
+    await ctx.db.insert('files', {
+      name: args.name,
+      orgId: args.orgId,
+      fileId: args.fileId,
+      type: args.type,
+      userId: hasAccess.user._id,
+    });
   },
 });
 
 export const getFiles = query({
   args: {
     orgId: v.string(),
+    query: v.optional(v.string()),
+    favorites: v.optional(v.boolean()),
+    deletedOnly: v.optional(v.boolean()),
+    type: v.optional(fileTypes),
   },
   async handler(ctx, args) {
     const identity = await ctx.auth.getUserIdentity();
