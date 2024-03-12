@@ -112,8 +112,6 @@ export const getFiles = query({
 
     const hasAccess = await hasAccessToOrg(ctx, args.orgId);
 
-    console.log(hasAccess);
-
     if (!hasAccess) {
       return [];
     }
