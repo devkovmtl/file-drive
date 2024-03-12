@@ -8,6 +8,8 @@ import {
 } from './_generated/server';
 import { getUser } from './users';
 import { fileTypes } from './schema';
+import { Doc, Id } from './_generated/dataModel';
+import { access } from 'fs';
 
 export const generateUploadUrl = mutation(async (ctx) => {
   const identity = await ctx.auth.getUserIdentity();
@@ -174,3 +176,49 @@ export const deleteAllFiles = internalMutation({
     );
   },
 });
+
+function assertCanDeleteFile(user: Doc<'users'>, file: Doc<'files'>) {
+  const canDelete =
+    file.userId === user._id ||
+    user.orgIds.find((org) => org.orgId === file.orgId)?.role === 'admin';
+
+  if (!canDelete) {
+    throw new ConvexError('You do not have permission to delete this file');
+  }
+}
+
+export const deleteFile = mutation({
+  args: { fileId: v.id('files') },
+  async handler(ctx, args) {
+    const hasAccess = await hasAccessToFile(ctx, args.fileId);
+
+    if (!hasAccess) {
+      throw new ConvexError('You do not have permission to delete this file');
+    }
+
+    assertCanDeleteFile(hasAccess.user, hasAccess.file);
+
+    await ctx.db.patch(args.fileId, {
+      shouldDelete: true,
+    });
+  },
+});
+
+async function hasAccessToFile(
+  ctx: QueryCtx | MutationCtx,
+  fileId: Id<'files'>
+) {
+  const file = await ctx.db.get(fileId);
+
+  if (!file) {
+    return null;
+  }
+
+  const hasAccess = await hasAccessToOrg(ctx, file.orgId!);
+
+  if (!hasAccess) {
+    return null;
+  }
+
+  return { user: hasAccess.user, file };
+}
