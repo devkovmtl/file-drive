@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import {
   Card,
   CardContent,
@@ -6,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Doc } from '../../../../convex/_generated/dataModel';
+import { Doc, Id } from '../../../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
 import {
   DeleteIcon,
@@ -95,6 +96,10 @@ function FileCardActions({ file }: { file: Doc<'files'> }) {
   );
 }
 
+function getFileUrl(fileId: Id<'files'>) {
+  return `${process.env.NEXT_PUBLIC_CONVEX_URL}/api/storage/${fileId}`;
+}
+
 export default function FileCard({
   file,
   isFavorited,
@@ -117,7 +122,18 @@ export default function FileCard({
         </div>
       </CardHeader>
       <CardContent className="h-[200px] flex justify-center items-center">
-        <p>Card Content</p>
+        {file.type === 'image' && (
+          <Image
+            alt={file.name}
+            width={200}
+            height={100}
+            src={getFileUrl(file._id)}
+          />
+        )}
+
+        {file.type === 'csv' && <GanttChartIcon className="w-24 h-24" />}
+
+        {file.type === 'pdf' && <FileTextIcon className="w-24 h-24" />}
       </CardContent>
       <CardFooter>
         <Button>Download</Button>
