@@ -135,8 +135,15 @@ export default function FileCard({
 
         {file.type === 'pdf' && <FileTextIcon className="w-24 h-24" />}
       </CardContent>
-      <CardFooter>
-        <Button>Download</Button>
+      <CardFooter className="flex justify-center">
+        <Button
+          onClick={() => {
+            // Open a new tab to file location on convex
+            window.open(getFileUrl(file._id), '_blank');
+          }}
+        >
+          Download
+        </Button>
       </CardFooter>
     </Card>
   );
