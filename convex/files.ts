@@ -204,6 +204,23 @@ export const deleteFile = mutation({
   },
 });
 
+export const restoreFile = mutation({
+  args: { fileId: v.id('files') },
+  async handler(ctx, args) {
+    const hasAccess = await hasAccessToFile(ctx, args.fileId);
+
+    if (!hasAccess) {
+      throw new ConvexError('You do not have permission to restore this file');
+    }
+
+    assertCanDeleteFile(hasAccess.user, hasAccess.file);
+
+    await ctx.db.patch(args.fileId, {
+      shouldDelete: false,
+    });
+  },
+});
+
 async function hasAccessToFile(
   ctx: QueryCtx | MutationCtx,
   fileId: Id<'files'>
