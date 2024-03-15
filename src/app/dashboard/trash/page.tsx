@@ -1,5 +1,11 @@
 'use client';
 
-export default function TrashPage() {
-  return <div>Trash Page</div>;
+import FileBrowser from '../_components/file-browser';
+
+export default function FavoritesPage() {
+  return (
+    <div>
+      <FileBrowser title="Trash" deletedOnly />
+    </div>
+  );
 }

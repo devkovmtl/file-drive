@@ -1,5 +1,11 @@
 'use client';
 
+import FileBrowser from '../_components/file-browser';
+
 export default function FavoritesPage() {
-  return <div>Favorites Page</div>;
+  return (
+    <div>
+      <FileBrowser title="Favorites" favoritesOnly />
+    </div>
+  );
 }
