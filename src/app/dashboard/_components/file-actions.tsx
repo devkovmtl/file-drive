@@ -1,10 +1,16 @@
 import { useState } from 'react';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 
 import { Doc, Id } from '../../../../convex/_generated/dataModel';
 import { api } from '../../../../convex/_generated/api';
 
-import { FileIcon, MoreVertical, StarIcon, TrashIcon } from 'lucide-react';
+import {
+  FileIcon,
+  MoreVertical,
+  StarIcon,
+  TrashIcon,
+  UndoIcon,
+} from 'lucide-react';
 
 import {
   DropdownMenu,
@@ -27,7 +33,7 @@ import {
 import { toast } from '@/components/ui/use-toast';
 import { Protect } from '@clerk/nextjs';
 
-function getFileUrl(fileId: Id<'files'>) {
+export function getFileUrl(fileId: Id<'files'>) {
   return `${process.env.NEXT_PUBLIC_CONVEX_URL}/api/storage/${fileId}`;
 }
 
@@ -40,6 +46,9 @@ export default function FileCardActions({
 }) {
   const deleteFile = useMutation(api.files.deleteFile);
   const toggleFavoriteFile = useMutation(api.files.toggleFavorite);
+  const restoreFile = useMutation(api.files.restoreFile);
+
+  const me = useQuery(api.users.getMe);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   return (
@@ -91,15 +100,32 @@ export default function FileCardActions({
           >
             <StarIcon className="w-4 h-4" /> Favorite
           </DropdownMenuItem>
-          <Protect role="org:admin" fallback={<></>}>
+          <Protect
+            condition={(check) => {
+              return check({ role: 'org:admin' }) || file.userId === me?._id;
+            }}
+            fallback={<></>}
+          >
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => {
-                setIsConfirmOpen(true);
+                if (file.shouldDelete) {
+                  restoreFile({ fileId: file._id });
+                } else {
+                  setIsConfirmOpen(true);
+                }
               }}
-              className="flex gap-1 text-red-600 items-center cursor-pointer "
+              className="flex gap-1 items-center cursor-pointer"
             >
-              <TrashIcon className="w-4 h-4" /> Delete
+              {file.shouldDelete ? (
+                <div className="flex gap-1 text-green-600 items-center cursor-pointer">
+                  <UndoIcon className="w-4 h-4" /> Restore
+                </div>
+              ) : (
+                <div className="flex gap-1 text-red-600 items-center cursor-pointer">
+                  <TrashIcon className="w-4 h-4" /> Delete
+                </div>
+              )}
             </DropdownMenuItem>
           </Protect>
         </DropdownMenuContent>
